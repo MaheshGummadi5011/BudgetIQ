@@ -144,11 +144,7 @@ BudgetIQ/
 
 ---  
 
-## 👥 Authors  
-
-- 🚀 [Meet Patel](https://www.linkedin.com/in/meet244/)  
-- 🤖 [Mohit Nippanikar](https://www.linkedin.com/in/mohitnippanikar/)  
-- 📈 [Rachit Chheda](https://www.linkedin.com/in/rachit-chheda-a1224124a/)  
+ 
 
 ---  
 

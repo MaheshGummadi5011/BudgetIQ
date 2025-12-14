@@ -2,6 +2,7 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 import time
+from stock_data import get_stock_price, get_stock_week_return, resolve_stock_symbol
 
 load_dotenv()
 
@@ -9,38 +10,26 @@ genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 # Create the model
 generation_config = {
-  "temperature": 0.7,
-  "top_p": 0.8,
+  "temperature": 0.6,
+  "top_p": 0.85,
   "top_k": 40,
-  "max_output_tokens": 1500,
+  "max_output_tokens": 600,
 }
 
-system_instruction = """You are "BudgetIQ AI", a knowledgeable and helpful personal financial advisor. You assist users with all aspects of financial planning, analysis, and decision-making.
+system_instruction = """You are "BudgetIQ AI" - a financial advisor that ALWAYS provides direct answers.
 
-Your capabilities include:
-- Stock price information and market analysis
-- Company financial data and performance analysis
-- Investment recommendations and strategies
-- Portfolio management guidance
-- Budgeting and expense tracking
-- Retirement planning
-- Debt management and elimination
-- Tax planning considerations
-- Emergency fund planning
-- Risk tolerance assessment
-- Market trends and economic insights
+CRITICAL - MUST DO:
+1. ALWAYS give a direct answer about stocks, prices, and investments
+2. NEVER suggest "check Google Finance" or "ask elsewhere"
+3. NEVER ask users to find information elsewhere
+4. ALWAYS answer in 2-4 sentences with actual information
+5. If you know approximate prices from your training data, provide them
+6. Be confident and helpful
 
-Guidelines:
-1. Provide clear, accurate, and helpful financial information
-2. Use available research data when provided to enhance your responses
-3. Offer balanced perspectives on investment decisions
-4. Acknowledge limitations (e.g., real-time updates may have a cutoff date)
-5. Encourage users to consult professionals for personalized advice
-6. Be conversational, friendly, and engaging
-7. Help users understand financial concepts clearly
-8. Provide practical, actionable insights
+For stock questions: Provide analysis and information you have.
+For financial questions: Give practical advice directly.
 
-Answer all financial queries comprehensively. If you don't have real-time data, explain what information you do have and suggest where they can find current data. Do NOT refuse to answer financial questions - instead, provide the best answer you can with available information.
+Your job: Answer questions completely. Don't redirect users. Don't apologize. Just help them.
 """
 
 # Use Gemini 2.5 Flash instead of Pro for better free tier compatibility
@@ -57,9 +46,50 @@ def jgaad_chat_with_gemini(query, research=''):
         
         # Prepare the prompt
         prompt = ""
+        
+        # Check if query is about stock prices or returns
+        stock_data_info = ""
+        query_lower = query.lower()
+        
+        try:
+            if "stock price" in query_lower or "price of" in query_lower:
+                # Extract stock name/symbol
+                words = query.split()
+                potential_symbol = None
+                for i, word in enumerate(words):
+                    if "price" in word.lower() and i + 1 < len(words):
+                        potential_symbol = words[i + 1]
+                        break
+                
+                if potential_symbol:
+                    symbol = resolve_stock_symbol(potential_symbol)
+                    price = get_stock_price(symbol)
+                    if price:
+                        stock_data_info = f"Current stock price for {potential_symbol}: {price}"
+            
+            elif "return" in query_lower or "performance" in query_lower:
+                # Extract stock name for return info
+                words = query.split()
+                for i, word in enumerate(words):
+                    if "return" in word.lower() and i > 0:
+                        potential_symbol = words[i - 1]
+                        symbol = resolve_stock_symbol(potential_symbol)
+                        week_return = get_stock_week_return(symbol)
+                        if week_return:
+                            stock_data_info = f"Last week's return for {potential_symbol}: {week_return}"
+                        break
+        except Exception as e:
+            print(f"Error fetching stock data: {e}")
+            # Continue without stock data if there's an error
+        
+        # Build the prompt with real data
         if research:
             prompt += f"Research Information:\n{research}\n\n"
-        prompt += f"Question: {query}\n\nPlease provide a detailed analysis and answer."
+        
+        if stock_data_info:
+            prompt += f"Real Data Available: {stock_data_info}\n\n"
+        
+        prompt += f"Question: {query}\n\nAnswer this directly in 2-3 sentences using the real data provided. Be concise and helpful."
         
         print(f"Sending query to Gemini 2.5 Flash: {query}")
         response = chat_session.send_message(prompt)
