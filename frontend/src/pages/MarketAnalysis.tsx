@@ -1,5 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Globe, Search } from 'lucide-react';
+import { useState } from 'react';
 
 const data = [
   { date: '2024-01', SP500: 4200, NASDAQ: 14000, DOW: 35000 },
@@ -32,6 +33,8 @@ const marketNews = [
 ];
 
 const MarketAnalysis = () => {
+  const [selectedView, setSelectedView] = useState('local');
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,9 +56,12 @@ const MarketAnalysis = () => {
               <option>Asian Markets</option>
               <option>Emerging Markets</option>
             </select>
-            <button className="btn-primary">
+            <button 
+              onClick={() => setSelectedView(selectedView === 'local' ? 'global' : 'local')}
+              className="btn-primary"
+            >
               <Globe className="h-5 w-5 mr-2" />
-              Global View
+              {selectedView === 'local' ? 'Global View' : 'Local View'}
             </button>
           </div>
         </div>

@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { 
   Wallet, TrendingUp, ArrowUpRight, DollarSign, 
-  Target, AlertTriangle, Shield
+  Target, AlertTriangle, Shield, X, CheckCircle
 } from 'lucide-react';
 import {
   portfolioSummary,
@@ -56,6 +56,8 @@ interface RiskMetricsWithScore extends RiskMetrics {
 const Portfolio = () => {
   const liabilities = liabilitiesData as Liability[];
   const recentActivity = recentActivityData as Activity[];
+  const [isRebalanceModalOpen, setIsRebalanceModalOpen] = useState(false);
+  const [rebalanceMessage, setRebalanceMessage] = useState('');
 
   // Format currency helper - Updated for INR
   const formatCurrency = (value: number) => {
@@ -64,6 +66,15 @@ const Portfolio = () => {
       currency: 'INR',
       maximumFractionDigits: 0 // INR typically doesn't use decimals
     }).format(value);
+  };
+
+  // Handle Rebalance action
+  const handleRebalance = () => {
+    setRebalanceMessage('Portfolio rebalanced successfully! Your allocation has been adjusted to match your target distribution.');
+    setTimeout(() => {
+      setIsRebalanceModalOpen(false);
+      setRebalanceMessage('');
+    }, 3000);
   };
 
   // Animation variants
@@ -218,7 +229,10 @@ const Portfolio = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Asset Allocation</h3>
-            <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium">
+            <button 
+              onClick={() => setIsRebalanceModalOpen(true)}
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium hover:underline transition-colors"
+            >
               Rebalance
             </button>
           </div>
@@ -704,6 +718,71 @@ const Portfolio = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Rebalance Modal */}
+      {isRebalanceModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rebalance Portfolio</h3>
+              <button
+                onClick={() => setIsRebalanceModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {rebalanceMessage ? (
+              <div className="flex items-center space-x-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="text-green-800 dark:text-green-300 text-sm">{rebalanceMessage}</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    Would you like to rebalance your portfolio to match your target allocation?
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Allocation</p>
+                      {assetAllocation.slice(0, 3).map((asset) => (
+                        <div key={asset.name} className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          <span>{asset.name}</span>
+                          <span className="font-medium">{asset.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setIsRebalanceModalOpen(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRebalance}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 font-medium transition-all transform hover:scale-102"
+                  >
+                    Rebalance Now
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };
